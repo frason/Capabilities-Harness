@@ -1,0 +1,15 @@
+[capability]
+name = "doc_writer"
+version = "0.1.0"
+description = "Updates documentation from architecture and design artifacts"
+required_memory = ["repository", "architecture", "task"]
+required_artifacts = ["architecture.md"]
+produced_artifacts = ["review.md"]
+required_tools = []
+validation_requirements = ["formatting"]
+
+[work_profile]
+priority = "low"
+quality = "standard"
+latency_expectation = "batch"
+cost_sensitivity = "cost_optimized"

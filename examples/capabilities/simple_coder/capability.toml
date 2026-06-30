@@ -1,0 +1,18 @@
+[capability]
+name = "simple_coder"
+version = "0.1.0"
+description = "Generates Python code from a requirements document"
+required_memory = ["repository", "task"]
+required_artifacts = ["requirements.md"]
+produced_artifacts = ["patch.diff"]
+required_tools = []
+validation_requirements = ["formatting", "lint", "unit_tests"]
+
+[work_profile]
+priority = "normal"
+quality = "high"
+latency_expectation = "relaxed"
+cost_sensitivity = "balanced"
+# Note: no model or provider fields.
+# The Routing Engine and Runtime decide which provider to use
+# based on work_profile hints and the active policy.

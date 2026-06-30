@@ -1,0 +1,41 @@
+# Capability Harness — Project Configuration
+# See docs/quickstart.md for a step-by-step guide
+# Reference: cap config validate --config harness.toml
+
+[state]
+# SQLite by default; set to postgresql://user:pass@host/db for Postgres
+database_url = "sqlite:///harness.db"
+
+[artifacts]
+root_path = ".harness/artifacts"
+hash_algorithm = "sha256"
+
+[policy]
+# human: requires `cap review approve <id>` before merge
+# auto: merges automatically after validation passes
+merge = "human"
+approval = "required"
+
+[policy.retry]
+max_attempts = 3
+backoff_seconds = 2.0
+
+[policy.routing]
+prefer_local = false
+provider_allowlist = []   # empty = allow all registered runtimes
+
+[policy.context]
+token_budget = 100000
+required_layers = ["repository", "task"]
+
+[policy.concurrency]
+max_concurrent_tasks = 4
+
+[telemetry]
+enabled = true
+exporter = "json"         # json | otlp | none
+# otlp_endpoint = "http://localhost:4317"
+
+[validation]
+stages = ["formatting", "lint", "typecheck", "unit_tests", "ai_review"]
+fail_fast = true

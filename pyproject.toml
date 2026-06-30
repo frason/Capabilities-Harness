@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "capability-harness"
+version = "0.1.0"
+description = "A deterministic operating system for AI-assisted software engineering"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.12"
+keywords = ["ai", "automation", "software-engineering", "deterministic"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "rich>=13",
+    "apscheduler>=3.10",
+    "sqlmodel>=0.0.19",
+    "httpx>=0.27",
+    "jinja2>=3.1",
+    "tenacity>=8.3",
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-api>=1.25",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+    "alembic>=1.13",
+]
+
+[project.scripts]
+cap = "capability_harness.cli.app:app"
+
+[project.entry-points."capability_harness.capabilities"]
+# built-ins registered here
+
+[tool.hatch.build.targets.wheel]
+packages = ["capability_harness"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

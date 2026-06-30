@@ -47,9 +47,14 @@ class RoutingEngine:
             except KeyError:
                 pass
 
-        # Default to cloud; fall back to noop during skeleton phase
+        # Prefer cloud; fall back through local → noop
         try:
             return self._registry.resolve("cloud")
+        except KeyError:
+            pass
+
+        try:
+            return self._registry.resolve("local")
         except KeyError:
             pass
 

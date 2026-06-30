@@ -2,9 +2,9 @@
 import pytest
 
 from capability_harness.application.registry import (
+    NOOP_CAPABILITY,
     CapabilityNotFoundError,
     CapabilityRegistry,
-    NOOP_CAPABILITY,
 )
 from capability_harness.domain.capability import CapabilitySpec
 

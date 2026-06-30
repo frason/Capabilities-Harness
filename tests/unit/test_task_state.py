@@ -1,7 +1,7 @@
 """Unit tests for the Task state machine."""
 import pytest
 
-from capability_harness.domain.task import Task, TaskState, VALID_TRANSITIONS
+from capability_harness.domain.task import VALID_TRANSITIONS, Task, TaskState
 from capability_harness.infrastructure.persistence.state_store import (
     InMemoryStateStore,
     TaskNotFoundError,

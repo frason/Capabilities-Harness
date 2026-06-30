@@ -46,12 +46,20 @@ class ValidationConfig(BaseModel):
     fail_fast: bool = True
 
 
+class LocalRuntimeConfig(BaseModel):
+    base_url: str = "http://localhost:11434"
+    default_model: str = "mistral"
+    timeout_seconds: int = 120
+    provider: Literal["ollama", "llama_cpp", "lm_studio"] = "ollama"
+
+
 class HarnessConfig(BaseModel):
     state: StateConfig = StateConfig()
     artifacts: ArtifactConfig = ArtifactConfig()
     policy: PolicyConfig = PolicyConfig()
     telemetry: TelemetryConfig = TelemetryConfig()
     validation: ValidationConfig = ValidationConfig()
+    local_runtime: LocalRuntimeConfig = LocalRuntimeConfig()
 
     def to_policy_engine(self) -> PolicyEngine:
         return PolicyEngine(

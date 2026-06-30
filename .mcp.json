@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "capability-harness": {
+      "command": "python",
+      "args": ["-m", "capability_harness.mcp.server"],
+      "cwd": "/Users/frason/Developer/Capability Harness"
+    }
+  }
+}

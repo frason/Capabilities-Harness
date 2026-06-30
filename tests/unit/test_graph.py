@@ -2,15 +2,15 @@
 import pytest
 
 from capability_harness.application.graph import (
+    NOOP_GRAPH,
     CapabilityGraph,
     CyclicDependencyError,
     GraphExecutor,
     GraphNode,
-    NOOP_GRAPH,
 )
-from capability_harness.application.registry import CapabilityRegistry, NOOP_CAPABILITY
-from capability_harness.application.routing import RoutingEngine
 from capability_harness.application.policy import PolicyEngine
+from capability_harness.application.registry import NOOP_CAPABILITY, CapabilityRegistry
+from capability_harness.application.routing import RoutingEngine
 from capability_harness.domain.task import Task
 from capability_harness.infrastructure.eventbus.bus import InProcessEventBus
 from capability_harness.infrastructure.runtime.provider_registry import NoOpRuntime, ProviderRegistry

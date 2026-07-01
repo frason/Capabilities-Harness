@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "capability-harness": {
-      "command": ".venv/bin/python",
-      "args": ["-m", "capability_harness.mcp.server"]
-    }
-  }
-}

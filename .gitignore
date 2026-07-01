@@ -32,3 +32,6 @@ harness.db
 # Coverage
 .coverage
 htmlcov/
+
+# Local MCP config (contains API keys — never commit)
+.mcp.json

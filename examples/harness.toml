@@ -40,9 +40,65 @@ exporter = "json"         # json | otlp | none
 stages = ["formatting", "lint", "typecheck", "unit_tests", "ai_review"]
 fail_fast = true
 
-[local_runtime]
-# Ollama default port. Change to 8080 for llama.cpp or 1234 for LM Studio.
+# ---------------------------------------------------------------------------
+# Providers — one section per inference provider
+# The Runtime never knows which provider runs. Routing selects by name.
+# ---------------------------------------------------------------------------
+
+[providers.anthropic]
+model = "claude-sonnet-4-6"
+# api_key = ""   # leave blank to read ANTHROPIC_API_KEY from environment
+
+[providers.ollama]
+model = "phi3"
 base_url = "http://localhost:11434"
-default_model = "phi3"
 timeout_seconds = 120
-provider = "ollama"   # ollama | llama_cpp | lm_studio
+
+[providers.openai]
+model = "gpt-4o"
+# api_key = ""   # leave blank to read OPENAI_API_KEY from environment
+
+# ---------------------------------------------------------------------------
+# Benchmark profiles — change active_profile to switch execution strategy.
+# No orchestration code changes when switching profiles.
+# ---------------------------------------------------------------------------
+
+# Active profile (override with CH_ACTIVE_PROFILE env var)
+active_profile = "quality"
+
+[profiles.quality]
+# All capabilities execute through Anthropic.
+# Purpose: compare orchestration quality against other frameworks
+# while holding the underlying model constant.
+default_provider = "anthropic"
+
+[profiles.quality.assignments]
+planner    = "anthropic"
+coder      = "anthropic"
+review     = "anthropic"
+tester     = "anthropic"
+documenter = "anthropic"
+
+[profiles.hybrid]
+# Planner and review use Anthropic; implementation uses Ollama.
+# Purpose: measure cost/throughput in a mixed-provider environment.
+default_provider = "anthropic"
+
+[profiles.hybrid.assignments]
+planner    = "anthropic"
+coder      = "ollama"
+review     = "anthropic"
+tester     = "ollama"
+documenter = "ollama"
+
+[profiles.local]
+# All capabilities execute through Ollama.
+# Purpose: fully local execution for offline or cost-sensitive scenarios.
+default_provider = "ollama"
+
+[profiles.local.assignments]
+planner    = "ollama"
+coder      = "ollama"
+review     = "ollama"
+tester     = "ollama"
+documenter = "ollama"

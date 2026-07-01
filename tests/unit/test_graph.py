@@ -13,7 +13,9 @@ from capability_harness.application.registry import NOOP_CAPABILITY, CapabilityR
 from capability_harness.application.routing import RoutingEngine
 from capability_harness.domain.task import Task
 from capability_harness.infrastructure.eventbus.bus import InProcessEventBus
-from capability_harness.infrastructure.runtime.provider_registry import NoOpRuntime, ProviderRegistry
+from capability_harness.infrastructure.providers.noop_provider import NoOpProvider
+from capability_harness.infrastructure.providers.registry import ProviderRegistry
+from capability_harness.infrastructure.runtime.runtime import Runtime
 
 
 def test_single_node_topological_order():
@@ -51,14 +53,22 @@ def test_unknown_dependency_raises():
 
 @pytest.mark.asyncio
 async def test_graph_executor_noop():
+    provider_registry = ProviderRegistry()
+    provider_registry.register("noop", NoOpProvider())
+    runtime = Runtime(provider_registry)
+
     registry = CapabilityRegistry()
     registry.register(NOOP_CAPABILITY)
-    provider_registry = ProviderRegistry()
-    provider_registry.register("noop", NoOpRuntime())
+
     policy = PolicyEngine()
-    routing = RoutingEngine(provider_registry, policy)
+    routing = RoutingEngine(
+        policy=policy,
+        default_provider="noop",
+        profile={"noop": "noop"},
+        registered_providers=["noop"],
+    )
     bus = InProcessEventBus()
-    executor = GraphExecutor(registry, routing, bus)
+    executor = GraphExecutor(registry, routing, bus, runtime=runtime)
 
     task = Task(capability_name="noop")
     result = await executor.execute(NOOP_GRAPH, task)

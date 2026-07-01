@@ -7,6 +7,7 @@ never shells out to `cap`.
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -21,15 +22,62 @@ from capability_harness.domain.task import Task, TaskState
 from capability_harness.infrastructure.eventbus.bus import InProcessEventBus
 from capability_harness.infrastructure.persistence.artifact_store import LocalArtifactStore
 from capability_harness.infrastructure.persistence.state_store import InMemoryStateStore
-from capability_harness.infrastructure.runtime.local_runtime import LocalRuntime
+from capability_harness.infrastructure.providers.anthropic_provider import AnthropicProvider
+from capability_harness.infrastructure.providers.noop_provider import NoOpProvider
+from capability_harness.infrastructure.providers.ollama_provider import OllamaProvider
+from capability_harness.infrastructure.providers.registry import ProviderRegistry
 from capability_harness.infrastructure.runtime.model_manager import OllamaModelManager
-from capability_harness.infrastructure.runtime.provider_registry import NoOpRuntime, ProviderRegistry
+from capability_harness.infrastructure.runtime.runtime import Runtime
 
 logger = logging.getLogger(__name__)
 
 mcp = FastMCP("capability-harness")
 
-# --- Composition root (shared across all tool calls in this process) ---
+# ---------------------------------------------------------------------------
+# Composition root
+# Providers are registered here and injected into Runtime.
+# Switch profiles by setting CH_ACTIVE_PROFILE env var.
+# ---------------------------------------------------------------------------
+
+_active_profile = os.environ.get("CH_ACTIVE_PROFILE", "quality")
+_default_provider = os.environ.get("CH_DEFAULT_PROVIDER", "anthropic")
+
+# Provider registry — every provider registered here is available for routing
+_provider_registry = ProviderRegistry()
+_provider_registry.register("noop", NoOpProvider())
+_provider_registry.register(
+    "anthropic",
+    AnthropicProvider(
+        api_key=os.environ.get("ANTHROPIC_API_KEY"),
+        default_model=os.environ.get("CH_ANTHROPIC_MODEL", "claude-sonnet-4-6"),
+    ),
+)
+_provider_registry.register(
+    "ollama",
+    OllamaProvider(
+        base_url=os.environ.get("CH_OLLAMA_URL", "http://localhost:11434"),
+        default_model=os.environ.get("CH_OLLAMA_MODEL", "phi3"),
+    ),
+)
+
+# Built-in benchmark profiles — maps capability_name → provider_name
+_PROFILES: dict[str, dict[str, str]] = {
+    "quality": {
+        "planner": "anthropic", "coder": "anthropic",
+        "review": "anthropic", "tester": "anthropic", "documenter": "anthropic",
+        "noop": "noop",
+    },
+    "hybrid": {
+        "planner": "anthropic", "coder": "ollama",
+        "review": "anthropic", "tester": "ollama", "documenter": "ollama",
+        "noop": "noop",
+    },
+    "local": {
+        "planner": "ollama", "coder": "ollama",
+        "review": "ollama", "tester": "ollama", "documenter": "ollama",
+        "noop": "noop",
+    },
+}
 
 _policy = PolicyEngine()
 _state_store = InMemoryStateStore()
@@ -37,14 +85,20 @@ _event_bus = InProcessEventBus()
 _artifact_store = LocalArtifactStore(root=".harness/artifacts")
 _model_manager = OllamaModelManager()
 
-_provider_registry = ProviderRegistry()
-_provider_registry.register("noop", NoOpRuntime())
-_provider_registry.register("local", LocalRuntime())  # uses Ollama at localhost:11434
+# Runtime — provider-agnostic executor; dispatches through ProviderRegistry
+_runtime = Runtime(_provider_registry)
 
 _registry = CapabilityRegistry()
 _registry.register(NOOP_CAPABILITY)
-_routing = RoutingEngine(_provider_registry, _policy)
-_graph_executor = GraphExecutor(_registry, _routing, _event_bus)
+
+_routing = RoutingEngine(
+    policy=_policy,
+    default_provider=_default_provider,
+    profile=_PROFILES.get(_active_profile, {}),
+    registered_providers=_provider_registry.list_providers(),
+)
+
+_graph_executor = GraphExecutor(_registry, _routing, _event_bus, runtime=_runtime)
 _scheduler = HarnessScheduler(
     graph_executor=_graph_executor,
     policy=_policy,
@@ -90,14 +144,14 @@ async def task_submit(capability: str, context: str = "", input_file: str | None
 
     # Execute the graph directly (synchronous dispatch for MCP — no polling needed)
     spec = _registry.resolve(capability)
-    runtime = _routing.select_runtime(spec)
+    provider_name = _routing.select_provider(spec)
 
     from capability_harness.domain.capability import WorkRequest
-    request = WorkRequest(task_id=task_id, spec=spec, context=input_content)
+    request = WorkRequest(task_id=task_id, spec=spec, context=input_content, provider=provider_name)
 
     try:
         _state_store.transition(task_id, TaskState.RUNNING, reason="mcp-dispatch")
-        result = await runtime.run(spec, request)
+        result = await _runtime.run(spec, request)
 
         if result.success:
             _write_output_artifact(task_id, result.output, capability)

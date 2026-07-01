@@ -82,10 +82,12 @@ class GraphExecutor:
         registry: Any,
         routing: Any,
         event_bus: Any,
+        runtime: Any = None,
     ) -> None:
         self._registry = registry
         self._routing = routing
         self._bus = event_bus
+        self._runtime = runtime  # Runtime instance injected at composition root
 
     async def execute(
         self,
@@ -108,14 +110,15 @@ class GraphExecutor:
             self._bus.publish(CapabilityStarted(task_id=task.id, capability_name=node_name))
             try:
                 spec: CapabilitySpec = self._registry.resolve(node_name)
-                runtime = self._routing.select_runtime(spec)
+                provider_name = self._routing.select_provider(spec)
                 request = WorkRequest(
                     task_id=task.id,
                     spec=spec,
                     context="",
+                    provider=provider_name,
                     memory_layers=memory_context or [],
                 )
-                result = await runtime.run(spec, request)
+                result = await self._runtime.run(spec, request)
             except Exception as exc:
                 result = WorkResult(
                     task_id=task.id,

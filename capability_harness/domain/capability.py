@@ -49,6 +49,7 @@ class WorkRequest(BaseModel):
     task_id: str
     spec: CapabilitySpec
     context: str
+    provider: str = "noop"  # set by RoutingEngine; Runtime reads this to select the provider
     artifacts: list[str] = Field(default_factory=list)
     memory_layers: list[str] = Field(default_factory=list)
 
